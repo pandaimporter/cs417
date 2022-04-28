@@ -1,0 +1,216 @@
+##PART 1##
+
+import maya.cmds as cmds
+import MASH.api as mapi
+
+#pre-dynamics settings
+cmds.playbackOptions(animationStartTime=1, animationEndTime=1200, by=1, ps=60)
+cmds.shadingNode('aiStandardSurface', asShader=True)
+cmds.shadingNode('aiStandardSurface', asShader=True)
+cmds.setAttr('aiStandardSurface2.baseColor', 1, 0, 0)
+#domino trail
+
+wow = cmds.curve(p=[(-28.375731, 0, -57.248103), (-16.259372, 0, -52.117511), (7.529579, 0, -41.856326), 
+(-4.817502, 0, -14.09258), (-66.618624, 0, -29.748103), (-79.140591, 0, 22.484561), (-10.885202, 0, 11.728725),
+(3.508213, 0, 64.652264), (-47.535994, 0, 52.989961), (-45.320133, 0, 71.432394), (-44.708331, 0, 81.862203)], name='wow')[0]
+cmds.setAttr('wow' + '.visibility', 0)
+
+plane1 = cmds.polyPlane(h=165, w=125)
+cmds.setAttr('pPlane1' + '.translateY', -1.025)
+cmds.setAttr('pPlane1' + '.translateZ', 9.4)
+cmds.setAttr('pPlane1' + '.translateX', -33.6)
+
+domino = cmds.polyCube(w=1, h=2, d=.3, name='domino')
+cmds.hyperShade(assign='aiStandardSurface2')
+cmds.setAttr('domino.ry',-94)
+mashNetwork = mapi.Network()
+mashNetwork.createNetwork(name="MASH1")
+mashNetwork.setPointCount(200)
+
+mashNetwork.addNode("MASH_Curve")
+cmds.connectAttr('curveShape1.worldSpace', 'MASH1_Curve.inCurves[0]')
+cmds.setAttr('MASH1_Curve.timeStep', 1)
+cmds.setAttr(mashNetwork.distribute + '.amplitudeX', 0)
+
+mashNetwork.addNode("MASH_Dynamics")
+cmds.setAttr("MASH1_Dynamics.friction", .5)
+cmds.setAttr("MASH1_BulletSolverShape.groundPlanePositionY", -1.025)
+cmds.setAttr("MASH1_BulletSolverShape.gravityY", -39.2)
+cmds.setAttr('MASH1_BulletSolverShape.lineColour',0.15, 0.15, 0.15)
+#grid of dominoes
+
+plane2 = cmds.polyPlane(h=130, w=130)
+cmds.setAttr('pPlane2' + '.translateY', -1.025)
+cmds.setAttr('pPlane2' + '.translateZ', 155)
+cmds.setAttr('pPlane2' + '.translateX', -35)
+domino2 = cmds.polyCube(w=1, h=2, d=.3, name='domino2')
+
+mashNetwork2 = mapi.Network()
+mashNetwork2.createNetwork(name="MASH2")
+cmds.setAttr(mashNetwork2.distribute + '.arrangement', 6)
+cmds.setAttr(mashNetwork2.distribute + '.gridx', 90)    
+cmds.setAttr(mashNetwork2.distribute + '.gridz', 90)
+cmds.setAttr(mashNetwork2.distribute + '.gridAmplitudeX', 125)    
+cmds.setAttr(mashNetwork2.distribute + '.gridAmplitudeZ', 125)
+mashNetwork2.addNode("MASH_Transform")
+cmds.setAttr('MASH2_Transform.positionAmount2', 155)
+cmds.setAttr('MASH2_Transform.positionAmount0', -35)
+
+mashNetwork2.addNode("MASH_Dynamics")
+cmds.setAttr("MASH2_Dynamics.friction", .5)
+
+mashNetwork2.addNode("MASH_Color")
+img = cmds.shadingNode('file', asTexture=True, isColorManaged=True, name='tom')
+cmds.setAttr (img + '.fileTextureName', 'C:\\Users\\Owen Guch\\Desktop\\tom.jpg', type='string')
+cmds.connectAttr (img + '.outColor', 'MASH2_Color.color')
+cmds.connectAttr ('pPlane2.worldMatrix', 'MASH2_Color.uvMatrix')
+cmds.setAttr('MASH2_ReproMeshShape.aiExportColors', 1)
+
+
+##PART 2##
+
+
+for j in range(6):
+    if(j != 2):
+        for i in range(90**2):
+            ind = 6 * i + j
+            cmds.select('MASH2_ReproMesh.f[' + str(ind) + ']', add=True)
+cmds.hyperShade(assign='aiStandardSurface1')
+
+#tipping over domino 1
+
+sph1 = cmds.polySphere()
+cmds.setAttr('pSphere1.visibility', 0)
+cmds.setAttr('pSphere1.translateX', -31)
+cmds.setAttr('pSphere1.translateY', 1.1)
+cmds.setAttr('pSphere1.translateZ', -58.655)
+cyl2 = cmds.polyCylinder(h=125, r=2.5)
+cmds.setAttr('pCylinder1.rotateX', 90)
+cmds.setAttr('pCylinder1.rotateY', 90)
+cmds.setAttr('pCylinder1.translateX', -35.049)
+cmds.setAttr('pCylinder1.translateZ', 84.049)
+mashNetwork.addCollider('pCylinderShape1')
+mashNetwork.addCollider('pSphereShape1')
+mashNetwork.addCollider('pPlaneShape1')
+mashNetwork.addCollider('pPlaneShape2')
+
+cmds.setAttr('pSphereShape1.mass', 100000)
+cmds.setAttr('pCylinderShape1.mass', 100000)
+#lighting
+
+light1 = cmds.spotLight(ca=69, i=1.1, p=-25)
+cmds.setAttr('spotLight1.rotateX', -90)
+cmds.setAttr('spotLight1.translateX', -32)
+cmds.setAttr('spotLight1.translateY', 111)
+cmds.setAttr('spotLight1.translateZ', 8.9)
+light2 = cmds.spotLight(ca=69, i=.7, p=-25)
+cmds.setAttr('spotLight2.rotateX', -90)
+cmds.setAttr('spotLight2.translateX', -32)
+cmds.setAttr('spotLight2.translateY', 111)
+cmds.setAttr('spotLight2.translateZ', 152)
+
+#keyframe and playblast
+
+#sphere
+
+cmds.currentTime(1)
+cmds.setKeyframe('pSphere1', attribute='translateX')
+cmds.setKeyframe('pSphere1', attribute='translateY')
+cmds.setKeyframe('pSphere1', attribute='translateZ')
+cmds.currentTime(5)
+cmds.setAttr('pSphere1.translateX', -27.589)
+cmds.setAttr('pSphere1.translateZ', -57.143)
+cmds.setKeyframe('pSphere1', attribute='translateX')
+cmds.setKeyframe('pSphere1', attribute='translateY')
+cmds.setKeyframe('pSphere1', attribute='translateZ')
+cmds.currentTime(15)
+cmds.setAttr('pSphere1.translateX', -26.494)
+cmds.setAttr('pSphere1.translateZ', -56.809)
+cmds.setKeyframe('pSphere1', attribute='translateX')
+cmds.setKeyframe('pSphere1', attribute='translateY')
+cmds.setKeyframe('pSphere1', attribute='translateZ')
+
+#cylinder
+
+cmds.currentTime(750)
+cmds.setKeyframe('pCylinder1', attribute='translateX')
+cmds.setKeyframe('pCylinder1', attribute='translateY')
+cmds.setKeyframe('pCylinder1', attribute='translateZ')
+cmds.currentTime(755)
+cmds.setAttr('pCylinder1.translateX', -35.049)
+cmds.setAttr('pCylinder1.translateY', 2.0)
+cmds.setAttr('pCylinder1.translateZ', 91.076)
+cmds.setKeyframe('pCylinder1', attribute='translateX')
+cmds.setKeyframe('pCylinder1', attribute='translateY')
+cmds.setKeyframe('pCylinder1', attribute='translateZ')
+cmds.currentTime(770)
+cmds.setAttr('pCylinder1.translateX', -35.049)
+cmds.setAttr('pCylinder1.translateY', 2.0)
+cmds.setAttr('pCylinder1.translateZ', 100.590)
+cmds.setKeyframe('pCylinder1', attribute='translateX')
+cmds.setKeyframe('pCylinder1', attribute='translateY')
+cmds.setKeyframe('pCylinder1', attribute='translateZ')
+
+#camera
+
+cmds.currentTime(1)
+cmds.setAttr('persp.translateX', -62.841)
+cmds.setAttr('persp.translateY', 10.580)
+cmds.setAttr('persp.translateZ', -42.923)
+cmds.setAttr('persp.rotateX', -14.138)
+cmds.setAttr('persp.rotateY', -93.800)
+cmds.setAttr('persp.rotateZ', 0)
+cmds.setKeyframe('persp', attribute='translateX')
+cmds.setKeyframe('persp', attribute='translateY')
+cmds.setKeyframe('persp', attribute='translateZ')
+cmds.setKeyframe('persp', attribute='rotateX')
+cmds.setKeyframe('persp', attribute='rotateY')
+cmds.setKeyframe('persp', attribute='rotateZ')
+cmds.currentTime(375)
+cmds.setAttr('persp.translateX', -119.754)
+cmds.setAttr('persp.translateY', 15.313)
+cmds.setAttr('persp.translateZ', -6.129)
+cmds.setAttr('persp.rotateX', -14.138)
+cmds.setAttr('persp.rotateY', -93.800)
+cmds.setAttr('persp.rotateZ', 0)
+cmds.setKeyframe('persp', attribute='translateX')
+cmds.setKeyframe('persp', attribute='translateY')
+cmds.setKeyframe('persp', attribute='translateZ')
+cmds.setKeyframe('persp', attribute='rotateX')
+cmds.setKeyframe('persp', attribute='rotateY')
+cmds.setKeyframe('persp', attribute='rotateZ')
+cmds.currentTime(750)
+cmds.setAttr('persp.translateX', -117.202)
+cmds.setAttr('persp.translateY', 15.863)
+cmds.setAttr('persp.translateZ', 61.631)
+cmds.setAttr('persp.rotateX', -15.938)
+cmds.setAttr('persp.rotateY', -77.400)
+cmds.setAttr('persp.rotateZ', 0)
+cmds.setKeyframe('persp', attribute='translateX')
+cmds.setKeyframe('persp', attribute='translateY')
+cmds.setKeyframe('persp', attribute='translateZ')
+cmds.setKeyframe('persp', attribute='rotateX')
+cmds.setKeyframe('persp', attribute='rotateY')
+cmds.setKeyframe('persp', attribute='rotateZ')
+cmds.currentTime(751)
+cmds.setAttr('persp.translateX', -57.456)
+cmds.setAttr('persp.translateY', 198.174)
+cmds.setAttr('persp.translateZ', 332.088)
+cmds.setAttr('persp.rotateX', -48.938)
+cmds.setAttr('persp.rotateY', -2.200)
+cmds.setAttr('persp.rotateZ', 0)
+cmds.setKeyframe('persp', attribute='translateX')
+cmds.setKeyframe('persp', attribute='translateY')
+cmds.setKeyframe('persp', attribute='translateZ')
+cmds.setKeyframe('persp', attribute='rotateX')
+cmds.setKeyframe('persp', attribute='rotateY')
+cmds.setKeyframe('persp', attribute='rotateZ')
+
+cmds.currentTime(1)
+
+#this makes four playblasts so my weak laptop can actually use the files without corrupting
+
+cmds.playblast( f="p5_movie_1.avi", st=1, et=300)
+cmds.playblast( f="p5_movie_2.avi", st=301, et=600)
+cmds.playblast( f="p5_movie_3.avi", st=601, et=900)
+cmds.playblast( f="p5_movie_4.avi", st=901, et=1100)
